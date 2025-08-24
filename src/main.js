@@ -1,4 +1,4 @@
-import { getImagesByQuery, PER_PAGE } from './js/pixabay-api.js';
+import { getImagesByQuery } from './js/pixabay-api.js';
 import {
   createGallery,
   clearGallery,
@@ -11,46 +11,32 @@ import iziToast from 'izitoast';
 import 'izitoast/dist/css/iziToast.min.css';
 
 const form = document.getElementById('search-form');
-const loadMoreBtn = document.getElementById('load-more');
 const gallery = document.getElementById('gallery');
+const loadMoreBtn = document.getElementById('load-more');
 
 let currentQuery = '';
 let currentPage = 1;
+const PER_PAGE = 15;
 let totalPages = 0;
 
 form.addEventListener('submit', async e => {
   e.preventDefault();
-  const query = e.target.elements['search-text'].value.trim();
+  currentQuery = e.target.elements['search-text'].value.trim();
+  if (!currentQuery) return;
 
-  if (!query) {
-    iziToast.error({
-      title: 'Error',
-      message: 'Please enter a search term',
-      position: 'topRight',
-      timeout: 3000,
-    });
-    return;
-  }
-
-  currentQuery = query;
   currentPage = 1;
   clearGallery();
   hideLoadMoreButton();
   showLoader();
 
   try {
-    const data = await getImagesByQuery(currentQuery, currentPage);
+    const data = await getImagesByQuery(currentQuery, currentPage, PER_PAGE);
 
-    if (!data || !Array.isArray(data.hits)) {
-      throw new Error('Unexpected API response');
-    }
-
-    if (data.totalHits === 0) {
+    if (!data || !data.hits.length) {
       iziToast.info({
         title: 'Info',
-        message: 'No images found for this query',
+        message: `No results found for "${currentQuery}".`,
         position: 'topRight',
-        timeout: 3000,
       });
       return;
     }
@@ -61,13 +47,18 @@ form.addEventListener('submit', async e => {
 
     if (currentPage < totalPages) {
       showLoadMoreButton();
+    } else {
+      iziToast.info({
+        title: 'Info',
+        message: `We're sorry, but you've reached the end of search results.`,
+        position: 'topRight',
+      });
     }
   } catch (error) {
     iziToast.error({
       title: 'Error',
-      message: error.message,
+      message: 'Something went wrong. Try again later.',
       position: 'topRight',
-      timeout: 3000,
     });
   } finally {
     hideLoader();
@@ -75,40 +66,26 @@ form.addEventListener('submit', async e => {
 });
 
 loadMoreBtn.addEventListener('click', async () => {
-  currentPage++;
+  currentPage += 1;
   hideLoadMoreButton();
   showLoader();
 
   try {
-    const data = await getImagesByQuery(currentQuery, currentPage);
+    const data = await getImagesByQuery(currentQuery, currentPage, PER_PAGE);
 
-    if (!data || !Array.isArray(data.hits)) {
-      throw new Error('Unexpected API response');
-    }
-
-    if (data.hits.length === 0) {
+    if (!data || !data.hits.length) {
       iziToast.info({
         title: 'Info',
         message: `We're sorry, but you've reached the end of search results.`,
         position: 'topRight',
-        timeout: 3000,
       });
       return;
     }
 
-    const prevLast = gallery.lastElementChild;
+    const firstNew = gallery.lastElementChild;
     createGallery(data.hits);
 
-    const firstNew = prevLast
-      ? prevLast.nextElementSibling
-      : gallery.firstElementChild;
-    if (firstNew) {
-      const { height } = firstNew.getBoundingClientRect();
-      window.scrollBy({
-        top: height * 2,
-        behavior: 'smooth',
-      });
-    }
+    totalPages = Math.ceil(data.totalHits / PER_PAGE);
 
     if (currentPage < totalPages) {
       showLoadMoreButton();
@@ -117,15 +94,21 @@ loadMoreBtn.addEventListener('click', async () => {
         title: 'Info',
         message: `We're sorry, but you've reached the end of search results.`,
         position: 'topRight',
-        timeout: 3000,
+      });
+    }
+
+    if (firstNew) {
+      const cardHeight = firstNew.getBoundingClientRect().height || 200;
+      window.scrollBy({
+        top: cardHeight * 2,
+        behavior: 'smooth',
       });
     }
   } catch (error) {
     iziToast.error({
       title: 'Error',
-      message: error.message,
+      message: 'Something went wrong. Try again later.',
       position: 'topRight',
-      timeout: 3000,
     });
   } finally {
     hideLoader();
