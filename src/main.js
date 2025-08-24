@@ -1,3 +1,4 @@
+import { getImagesByQuery } from './js/pixabay-api.js';
 import {
   createGallery,
   clearGallery,
@@ -6,36 +7,26 @@ import {
   showLoadMoreButton,
   hideLoadMoreButton,
 } from './js/render-functions.js';
-
-import { getImagesByQuery } from './js/pixabay-api.js';
-
-import 'izitoast/dist/css/iziToast.min.css';
-import 'simplelightbox/dist/simple-lightbox.min.css';
-import './css/stylesme.css';
-
 import iziToast from 'izitoast';
+import 'izitoast/dist/css/iziToast.min.css';
 
-const searchForm = document.querySelector('#search-form');
-const gallery = document.querySelector('#gallery');
-const loadMoreBtn = document.querySelector('#load-more');
+const form = document.getElementById('search-form');
+const gallery = document.getElementById('gallery');
+const loadMoreBtn = document.getElementById('load-more');
 
-let currentPage = 1;
 let currentQuery = '';
+let currentPage = 1;
+const PER_PAGE = 15;
 let totalPages = 0;
 
-const PER_PAGE = 15;
-
-searchForm.addEventListener('submit', async e => {
+form.addEventListener('submit', async e => {
   e.preventDefault();
+  currentQuery = e.target.elements['search-text'].value.trim();
+  if (!currentQuery) return;
 
-  const query = e.target['search-text'].value.trim();
-  if (!query) return;
-
-  currentQuery = query;
   currentPage = 1;
   clearGallery();
   hideLoadMoreButton();
-
   showLoader();
 
   try {
@@ -44,9 +35,8 @@ searchForm.addEventListener('submit', async e => {
     if (!data || !data.hits.length) {
       iziToast.info({
         title: 'Info',
-        message: `No images found. Try another query.`,
+        message: `No results found for "${currentQuery}".`,
         position: 'topRight',
-        timeout: 3000,
       });
       return;
     }
@@ -62,13 +52,12 @@ searchForm.addEventListener('submit', async e => {
         title: 'Info',
         message: `We're sorry, but you've reached the end of search results.`,
         position: 'topRight',
-        timeout: 3000,
       });
     }
-  } catch (err) {
+  } catch (error) {
     iziToast.error({
       title: 'Error',
-      message: `Something went wrong. Please try again later.`,
+      message: 'Something went wrong. Try again later.',
       position: 'topRight',
     });
   } finally {
@@ -77,7 +66,7 @@ searchForm.addEventListener('submit', async e => {
 });
 
 loadMoreBtn.addEventListener('click', async () => {
-  currentPage++;
+  currentPage += 1;
   hideLoadMoreButton();
   showLoader();
 
@@ -89,7 +78,6 @@ loadMoreBtn.addEventListener('click', async () => {
         title: 'Info',
         message: `We're sorry, but you've reached the end of search results.`,
         position: 'topRight',
-        timeout: 3000,
       });
       return;
     }
@@ -106,21 +94,20 @@ loadMoreBtn.addEventListener('click', async () => {
         title: 'Info',
         message: `We're sorry, but you've reached the end of search results.`,
         position: 'topRight',
-        timeout: 3000,
       });
     }
 
     if (firstNew) {
-      const cardHeight = firstNew.getBoundingClientRect().height;
+      const cardHeight = firstNew.getBoundingClientRect().height || 200;
       window.scrollBy({
         top: cardHeight * 2,
         behavior: 'smooth',
       });
     }
-  } catch (err) {
+  } catch (error) {
     iziToast.error({
       title: 'Error',
-      message: `Something went wrong. Please try again later.`,
+      message: 'Something went wrong. Try again later.',
       position: 'topRight',
     });
   } finally {
