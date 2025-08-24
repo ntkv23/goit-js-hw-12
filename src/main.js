@@ -7,8 +7,10 @@ import {
   showLoadMoreButton,
   hideLoadMoreButton,
 } from './js/render-functions.js';
+
 import iziToast from 'izitoast';
 import 'izitoast/dist/css/iziToast.min.css';
+import 'simplelightbox/dist/simple-lightbox.min.css';
 
 const form = document.getElementById('search-form');
 const gallery = document.getElementById('gallery');
@@ -82,7 +84,6 @@ loadMoreBtn.addEventListener('click', async () => {
       return;
     }
 
-    const firstNew = gallery.lastElementChild;
     createGallery(data.hits);
 
     totalPages = Math.ceil(data.totalHits / PER_PAGE);
@@ -97,8 +98,12 @@ loadMoreBtn.addEventListener('click', async () => {
       });
     }
 
-    if (firstNew) {
-      const cardHeight = firstNew.getBoundingClientRect().height || 200;
+    const firstNewCard = document.querySelector(
+      `#gallery li:nth-child(${(currentPage - 1) * PER_PAGE + 1})`
+    );
+
+    if (firstNewCard) {
+      const cardHeight = firstNewCard.getBoundingClientRect().height || 200;
       window.scrollBy({
         top: cardHeight * 2,
         behavior: 'smooth',
